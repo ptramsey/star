@@ -45,30 +45,41 @@ class StartRow(Command):
     n_bytes = F.uint16le()
 
 
-def image_offsets(buff):
-    offset = buff.find(MoveVertPos.CODE, 0)
-    while offset >= 0:
-        yield offset
-        offset = buff.find(MoveVertPos.CODE, offset+1)
+def find_commands(buff, command_cls, start_offset=0, end_offset=-1):
+    if end_offset == -1 or end_offset is None:
+        end_offset = len(buff)
+
+    if isinstance(start_offset, Command):
+        start_offset = start_offset._offset + start_offset._size
+    if isinstance(end_offset, Command):
+        end_offset = end_offset._offset
+
+    offset = buff.find(command_cls.CODE, start_offset)
+    while start_offset <= offset < end_offset:
+        yield command_cls(buff, offset)
+        offset = buff.find(command_cls.CODE, offset + 1)
 
 
-def rows(buff, image_offset):
-    next_image = buff.find(MoveVertPos.CODE, image_offset + 1)
-    next_image = len(buff) if next_image < 0 else next_image
-    
-    offset = buff.find(StartRow.CODE, image_offset)
-    while image_offset < offset < next_image: 
-        yield StartRow(buff, offset)
-        offset = buff.find(StartRow.CODE, offset + 1)
+def with_next(iterable):
+    it = iter(iterable)
+    prev = next(it)
+    try:
+        while True:
+            curr = next(it)
+            yield (prev, curr)
+            prev = curr
+
+    except StopIteration:
+        yield (prev, None)
 
 
 def read_images(filename):
     filesize = os.stat(filename).st_size
 
     with open(filename) as _, mmap(_.fileno(), min(MAX_MMAP, filesize), prot=PROT_READ) as doc:
-        for image_offset in image_offsets(doc):
+        for current, nxt in with_next(find_commands(doc, MoveVertPos)):
             image = []
-            for start_row in rows(doc, image_offset):
+            for start_row in find_commands(doc, StartRow, current, nxt):
                 row_offset = start_row._offset + start_row._size
                 image.append(doc[row_offset:row_offset + start_row.n_bytes])
 
