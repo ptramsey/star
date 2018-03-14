@@ -1,6 +1,7 @@
 import re
 import struct
 from collections import OrderedDict, namedtuple
+from warnings import warn
 
 class Field:
     def __init_subclass__(cls, format):
@@ -51,8 +52,7 @@ class Struct(metaclass=StructMeta):
         for name, field in self._fields.items():
             if field.allowed is not None:
                 if getattr(self, name) not in field.allowed:
-                    raise ValueError(
-                            "Field {} has invalid value {}".format(name, getattr(self, name)))
+                    warn("Field {} has invalid value {}".format(name, getattr(self, name)))
     
     def __repr__(self):
         return re.sub(r'{}\((.*)\)'.format(self._Tuple.__name__),
