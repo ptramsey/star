@@ -10,13 +10,13 @@ from pathlib import Path
 
 from PIL import Image
 
-from packed_struct import F, Struct, StructMeta
+from packed_struct import F, Struct
 
 MAX_MMAP = 2 * 1024 * 1024
 OUT_DIR = Path("out").resolve()
 
 
-class Command(Struct, metaclass=type("CommandMeta", (StructMeta, ABCMeta), {})):
+class Command(Struct, metaclass=ABCMeta):
     @abstractproperty
     def CODE(self):
         """The byte string code for this command

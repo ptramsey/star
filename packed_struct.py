@@ -28,13 +28,13 @@ class Field:
     def __repr__(self):
         return "{}<'{}'>".format(self.__class__.__qualname__, self.format)
 
-class StructMeta(type):
-    def __init__(cls, name, bases, dct):
-        cls._fields = OrderedDict((k, v) for (k, v) in dct.items() if isinstance(v, Field))
 
-        cls._Tuple = namedtuple(name + 'Tuple', cls._fields.keys())
+class Struct:
+    def __init_subclass__(cls):
+        cls._fields = OrderedDict((k, v) for (k, v) in cls.__dict__.items() if isinstance(v, Field))
 
-class Struct(metaclass=StructMeta):
+        cls._Tuple = namedtuple(cls.__name__ + 'Tuple', cls._fields.keys())
+
     def __init__(self, buff, offset=0):
         self._buffer = buff
 
